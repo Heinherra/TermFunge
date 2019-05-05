@@ -33,6 +33,8 @@ runDelay = 0.1
 #GLOBALS
 #######################################################
 
+ESCAPE = [ESC,'\x08','\x0f',HOME]
+
 pfOffx = 4
 pfOffy = 4
 
@@ -378,7 +380,7 @@ def mainLoop():
 			else:
 				run()
 		
-		elif key == ESC or key == '\x08' or key == '\x0f':
+		elif key in ESCAPE
 			topMenu()
 		
 		elif isPrintable(ord(key[0])):
@@ -425,7 +427,7 @@ def topMenu():
 			drawTopMenu()
 			return
 			
-		elif key == ESC:
+		elif key in ESCAPE:
 			menuSelector = -1
 			drawTopMenu()
 			return
@@ -488,7 +490,7 @@ def fileBrowser(directoryOnly):
 				elif selector >= len(d):
 					return currentDir + "\\" + f[selector - len(d)]
 		
-			elif key == ESC:					
+			elif key in ESCAPE:					
 				return ""
 
 def saveToFile(filepath):
