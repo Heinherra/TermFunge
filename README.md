@@ -1,5 +1,5 @@
 # PyFunge
-A Befunge editor and interpreter made in Python . Wowee <br />
+A Befunge editor and interpreter made in Python . Runs on terminals and hopefully both on Linux and Windows. Wowee <br />
 **Controls** <br />
 
 | Key | Description |
