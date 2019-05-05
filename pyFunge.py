@@ -262,7 +262,7 @@ def run():
 	moveCursor(programPntr,0,0)
 
 	L = []
-	thread.start_new_thread(runInterruptThread, (L,))
+	t = thread.start_new_thread(runInterruptThread, (L,))
 	
 	while(running):		
 		char = chr(playfield[programPntr[0]][programPntr[1]])		
@@ -282,6 +282,7 @@ def run():
 			break
 		moveCursor(programPntr,programDir[0] ,programDir[1])
 		
+	#t.kill()
 	eraseCursor(programPntr)
 	moveCursor(fieldCursor,0,0)
 	
@@ -875,7 +876,7 @@ ops = {
 'g' : get,
 'p' : put,
 '&' : readNum,
-'`' : readCh
+'~' : readCh
 }
 
 for i in range(10):
