@@ -329,8 +329,8 @@ def runInterruptThread(running,stepMode,stepReady,inputLock):
 		with inputLock.get_lock():
 			if running.value:	
 				
-				if not inputLock.value:
-					continue
+				if inputLock.value:
+					continue				
 			
 				key = rc.readkey()			
 				
