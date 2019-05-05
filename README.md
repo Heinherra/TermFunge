@@ -8,10 +8,12 @@ Requires [**readchar**](https://github.com/magmax/python-readchar/) and [**color
 | Key | Description |
 | --- | --- |
 | Arrow keys | Move around in playfield / menus |
-| Enter | Start/ stop interpreter/ confirm / confirm selection |
+| Enter | Start interpreter/ confirm / confirm selection |
+| Space | Stop interpreter / exit step by step mode |
+| . | Start step by step mode / advance a step |
 | CTRL-N | Make selection and copy |
 | CTRL-K | Make selection and cut |
 | CTRL-U | Paste selection |
-| ESC / CTRL-O / END | Exit out of menu / open top menu |
+| ESC / CTRL-O / END / BACKSPACE | Exit out of menu / open top menu |
 
 ![alt text](https://i.imgur.com/dMFF61W.png)
