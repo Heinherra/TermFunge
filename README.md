@@ -10,3 +10,5 @@ A Befunge editor and interpreter made in Python . Wowee <br />
 | CTRL-K | Make selection and cut |
 | CTRL-U | Paste selection |
 | ESC | Exit out of menu / open top menu |
+
+![alt text](https://i.imgur.com/dMFF61W.png)
