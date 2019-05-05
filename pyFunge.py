@@ -63,6 +63,12 @@ running = False
 stringMode = False
 selecting = False
 
+stepMode = False
+stepReady = False
+
+exitLock = False
+inputLock = False
+
 copyBuffer = []
 	
 def recalculateOffsets():		
@@ -237,61 +243,16 @@ def drawTopMenu():
 #######################################################	
 
 def isPrintable(num):
-	return 32 <= num <= 128	
+	try:
+		return 32 <= num <= 128	
+	except:
+		return False
 
 def getAt(x,y):
 	if isPrintable(playfield[x][y]):
 		return chr(playfield[x][y])
 	return '¿'
 
-def run():
-	global programDir
-	global programPntr
-	global running
-	global stack		
-	
-	stack = []
-	drawStack()	
-	
-	console = ["" for x in range(consoleWidth)]
-	drawConsoleContents()
-	
-	running = True
-	programPntr = [0,0]
-	programDir = [1,0]
-	
-	eraseCursor(fieldCursor)
-	moveCursor(programPntr,0,0)
-
-	L = []
-	t = thread.start_new_thread(runInterruptThread, (L,))
-	
-	while(running):		
-		char = chr(playfield[programPntr[0]][programPntr[1]])		
-		
-		if stringMode:
-			if char[0] == '"':
-				toggleString()
-			else:
-				push( ord(char[0]))
-		elif char in ops:			
-			ops[char]()
-					
-		sleep(runDelay)
-		
-		if L: 
-			running = False
-			break
-		moveCursor(programPntr,programDir[0] ,programDir[1])
-		
-	#t.kill()
-	eraseCursor(programPntr)
-	moveCursor(fieldCursor,0,0)
-	
-def runInterruptThread(L):
-	input()
-	L.append(None)
-	
 def copySelection(cut):
 	
 	global copyBuffer
@@ -315,7 +276,90 @@ def copySelection(cut):
 		moveCursor(fieldCursor,0,0)
 	
 	printStringToConsole("\nSelection copied")
+	
+def run():
+	global programDir
+	global programPntr
+	global running
+	global stack		
+	global stepReady
+	
+	stack = []
+	drawStack()	
+	
+	console = ["" for x in range(consoleWidth)]
+	drawConsoleContents()
+	
+	running = True
+	programPntr = [0,0]
+	programDir = [1,0]
+	
+	eraseCursor(fieldCursor)
+	moveCursor(programPntr,0,0)
+	
+	t = thread.start_new_thread(runInterruptThread,())
+	
+	while(running):		
+		
+		char = chr(playfield[programPntr[0]][programPntr[1]])		
+		
+		if stringMode:
+			if char[0] == '"':
+				toggleString()
+			else:
+				push( ord(char[0]))
+		elif char in ops:			
+			ops[char]()
+					
+		if not stepMode:
+			sleep(runDelay)		
+			
+		stepReady = True
+				
+		while stepMode and stepReady:
+			sleep(0.1)
+		
+		moveCursor(programPntr,programDir[0] ,programDir[1])
+			
+	eraseCursor(programPntr)
+	moveCursor(fieldCursor,0,0)
+	
+def runInterruptThread():
+	global running
+	global stepReady
+	global stepMode	
+	global exitLock
+	global inputLock
+	
+	exitLock = True
+	
+	while True:
+		if inputLock:
+			continue
+			
+		sleep(0.1)
+		key = rc.readkey()
 
+		if running:
+			
+			if key == SPACE and not stepMode:
+				running = False
+				break		
+			
+			elif key == SPACE and stepMode:
+				stepMode = False
+			
+			elif key[0] == '.':
+				if not stepMode:
+					stepMode = True
+				elif stepMode and stepReady:
+					stepReady = False
+				
+		elif not running:
+			break		
+		
+	exitLock = False
+	
 def pasteSelection():
 	
 	if copyBuffer == []:
@@ -337,12 +381,16 @@ def pasteSelection():
 def mainLoop():
 	global programRunning
 	global selecting
+	global stepMode
 	
 	cut = False
 	
 	while programRunning:
+		
+		if exitLock:
+			continue
+			
 		key = rc.readkey()
-
 		cursor = selectionCursor if selecting else fieldCursor
 		
 		if key == UP:
@@ -370,7 +418,11 @@ def mainLoop():
 			
 		elif key == '\x15' and not selecting: #CTRL-U
 			pasteSelection()
-			
+		
+		elif key == '.':
+			stepMode = True
+			run()
+		
 		elif key == ENTER:
 			if selecting:
 				selecting = False
@@ -383,9 +435,13 @@ def mainLoop():
 		elif key in ESCAPE:
 			topMenu()
 		
-		elif isPrintable(ord(key[0])):
-			playfield[fieldCursor[0]][fieldCursor[1]]= ord(key[0])
-			moveCursor(fieldCursor,0,0)
+		else:
+			try:
+				if isPrintable(ord(key)):
+					playfield[fieldCursor[0]][fieldCursor[1]]= ord(key[0])
+					moveCursor(fieldCursor,0,0)
+			except:
+				pass
 			
 		if selecting:
 			moveCursor(fieldCursor,0,0)
@@ -498,18 +554,24 @@ def saveToFile(filepath):
 	
 		for y in range(playfieldHeight):
 			for x in range(playfieldWidth):
-				file.write( chr(playfield[x][y]))
+				try:
+					file.write( chr(playfield[x][y]))
+				except:
+					file.write( ' ')
 				
 			file.write("\n")
 				
 	printStringToConsole("\nFile saved")
 	
 def saveAs():
+	global currentFile
 	filename = inputField("File name:",'string')	
 	dir = fileBrowser(True)
 	
 	if len(filename) == 0 or filename == "\n":
 		filename = "new.bf"
+	
+	currentFile = filename
 	
 	clearScreen()
 	drawEverything()
@@ -603,13 +665,16 @@ def newPlayfieldMenu():
 	newPlayfield(w,h)
 		
 def inputField(text,type):
-		
+	
+	global inputLock
+	inputLock = True
+	
+	print(MENU)
+	out = ""
 	frameWidth = 20	
 	
-	for x in range(frameWidth):
-		printAt(x,0," ")
-		printAt(x,1," ")
-		printAt(x,2," ")
+	for x in range(frameWidth + 1):	
+		printAt(x,1," ")		
 	
 	drawFrame(1,1,frameWidth,1,"│","─","┌","┐","└","┘")
 	printAt(2,0,text)
@@ -619,9 +684,11 @@ def inputField(text,type):
 		while True:
 			input = rc.readkey()		
 			if ' ' <= input <= '~':
-				return input			
+				out = input			
+				break
 			elif input == ENTER:
-				return "\n"
+				out = "\n"
+				break
 				
 	if type == "int":
 		
@@ -642,9 +709,9 @@ def inputField(text,type):
 					num = 0
 				break	
 		
-			printAt(1,1,num.ljust(frameWidth - 1))
+			printAt(1,1,num.ljust(frameWidth))
 		
-		return int(num)
+		out = int(num)
 		
 	if type == "string":
 		
@@ -653,7 +720,7 @@ def inputField(text,type):
 		while True:
 			input = rc.readkey()	
 			
-			if ' ' <= input <= '~' and len(string) < frameWidth - 2:
+			if ' ' <= input <= '~' and len(string) < frameWidth:
 				string += input
 				
 			elif input == ENTER:
@@ -662,10 +729,19 @@ def inputField(text,type):
 			elif input == BACKSPACE or input == '\x1f' or input == '\x08':
 				string = string[:-1]
 		
-			printAt(1,1,string.ljust(frameWidth - 1))
+			printAt(1,1,string.ljust(frameWidth))
 		
-		return string
+		out = string
 
+	print("\033[37;40m")
+	for x in range(frameWidth + 2):
+		printAt(x,0," ")
+		printAt(x,1," ")
+		printAt(x,2," ")
+	
+	inputLock = False
+	return out
+		
 def setDelay():
 	global runDelay
 	delay = inputField("Set run delay (ms):","int")
@@ -674,8 +750,7 @@ def setDelay():
 		delay = 25
 	
 	runDelay = delay / 1000
-	clearScreen()
-	drawEverything()
+	drawTopMenu()
 		
 menu = [
 ("NEW" , newPlayfieldMenu),
@@ -727,6 +802,11 @@ def wrap(cursor):
 
 def kill():
 	global running
+	global stepMode
+	global stepReady
+	
+	stepMode = False
+	stepReady = False
 	running = False
 
 def sub():
@@ -813,14 +893,12 @@ def printNum():
 		printToConsole(ord(c))
 	
 def readCh():
-	push(ord(inputField("Input a character",'char')))
-	clearScreen()
-	drawEverything()
+	push(ord(inputField("Input a character",'char')))	
+	drawTopMenu()
 		
 def readNum():
 	push(inputField("Input a number",'int'))
-	clearScreen()
-	drawEverything()
+	drawTopMenu()
 	
 def get():
 	y = pop()
