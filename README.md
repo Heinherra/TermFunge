@@ -2,11 +2,11 @@
 A Befunge editor and interpreter made in Python . Wowee <br />
 **Controls** <br />
 
-| Key | Descripyion |
+| Key | Description |
 | --- | --- |
-| Arrow keys | move around in playfield / menus |
-| Enter | start/stop interpreter/confirm |
-| CTRL-N | make selection and copy |
-| CTRL-K | make selection and cut |
-| CTRL-U | paste selection |
-| ESC | exit out of menu / open top menu |
+| Arrow keys | Move around in playfield / menus |
+| Enter | Start/stop interpreter/confirm |
+| CTRL-N | Make selection and copy |
+| CTRL-K | Make selection and cut |
+| CTRL-U | Paste selection |
+| ESC | Exit out of menu / open top menu |
