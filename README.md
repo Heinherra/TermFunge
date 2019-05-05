@@ -10,7 +10,7 @@ Requires [**readchar**](https://github.com/magmax/python-readchar/) and [**color
 | Arrow keys | Move around in playfield / menus |
 | Enter | Start interpreter/ confirm / confirm selection |
 | Space | Stop interpreter / exit step by step mode |
-| . | Start step by step mode / advance a step |
+| . | Start step by step mode / advance one step |
 | CTRL-N | Make selection and copy |
 | CTRL-K | Make selection and cut |
 | CTRL-U | Paste selection |
