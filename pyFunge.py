@@ -1,7 +1,9 @@
 import random
 import os
 import readchar as rc
-import _thread as thread
+import multiprocessing
+from multiprocessing import Value , Lock
+from threading import Thread
 from readchar.key import *
 from colorama import *
 from time import sleep
@@ -59,15 +61,8 @@ programDir = [1,0]
 currentFile = "new.bf"
 
 programRunning = True
-running = False
 stringMode = False
 selecting = False
-
-stepMode = False
-stepReady = False
-
-exitLock = False
-inputLock = False
 
 copyBuffer = []
 	
@@ -283,6 +278,7 @@ def run():
 	global running
 	global stack		
 	global stepReady
+	global stepMode
 	
 	stack = []
 	drawStack()	
@@ -290,16 +286,18 @@ def run():
 	console = ["" for x in range(consoleWidth)]
 	drawConsoleContents()
 	
-	running = True
+	running.value = True
 	programPntr = [0,0]
 	programDir = [1,0]
 	
 	eraseCursor(fieldCursor)
 	moveCursor(programPntr,0,0)
+			
+	p = multiprocessing.Process(target=runInterruptThread, args = (running,stepMode,stepReady,inputLock))
 	
-	t = thread.start_new_thread(runInterruptThread,())
+	p.start()	
 	
-	while(running):		
+	while(running.value):		
 		
 		char = chr(playfield[programPntr[0]][programPntr[1]])		
 		
@@ -311,12 +309,12 @@ def run():
 		elif char in ops:			
 			ops[char]()
 					
-		if not stepMode:
+		if not stepMode.value:
 			sleep(runDelay)		
 			
-		stepReady = True
+		stepReady.value = True
 				
-		while stepMode and stepReady:
+		while stepMode.value and stepReady.value:
 			sleep(0.1)
 		
 		moveCursor(programPntr,programDir[0] ,programDir[1])
@@ -324,41 +322,35 @@ def run():
 	eraseCursor(programPntr)
 	moveCursor(fieldCursor,0,0)
 	
-def runInterruptThread():
-	global running
-	global stepReady
-	global stepMode	
-	global exitLock
-	global inputLock
-	
-	exitLock = True
+def runInterruptThread(running,stepMode,stepReady,inputLock):
 	
 	while True:
-		if inputLock:
-			continue
-			
-		sleep(0.1)
-		key = rc.readkey()
 
-		if running:
-			
-			if key == SPACE and not stepMode:
-				running = False
-				break		
-			
-			elif key == SPACE and stepMode:
-				stepMode = False
-			
-			elif key[0] == '.':
-				if not stepMode:
-					stepMode = True
-				elif stepMode and stepReady:
-					stepReady = False
+		with inputLock.get_lock():
+			if running.value:	
 				
-		elif not running:
-			break		
-		
-	exitLock = False
+				if not inputLock.value:
+					continue
+			
+				key = rc.readkey()			
+				
+				if key == SPACE and not stepMode.value:
+					running.value = False
+					break		
+				
+				elif key == SPACE and stepMode.value:
+					stepMode.value = False
+				
+				elif key[0] == '.':
+					if not stepMode.value:
+						stepMode.value = True
+					elif stepMode.value and stepReady.value:
+						stepReady.value = False
+						
+				
+				
+			elif not running.value:
+				break	
 	
 def pasteSelection():
 	
@@ -387,8 +379,9 @@ def mainLoop():
 	
 	while programRunning:
 		
-		if exitLock:
-			continue
+		#if exitLock.value:
+		#	continue
+		#exitLock.acquire()
 			
 		key = rc.readkey()
 		cursor = selectionCursor if selecting else fieldCursor
@@ -420,7 +413,7 @@ def mainLoop():
 			pasteSelection()
 		
 		elif key == '.':
-			stepMode = True
+			stepMode.value = True
 			run()
 		
 		elif key == ENTER:
@@ -667,79 +660,83 @@ def newPlayfieldMenu():
 def inputField(text,type):
 	
 	global inputLock
-	inputLock = True
 	
-	print(MENU)
-	out = ""
-	frameWidth = 20	
+	with inputLock.get_lock():
+		inputLock.value = True	
 	
-	for x in range(frameWidth + 1):	
-		printAt(x,1," ")		
-	
-	drawFrame(1,1,frameWidth,1,"│","─","┌","┐","└","┘")
-	printAt(2,0,text)
-	
-	if type == "char":
-	
-		while True:
-			input = rc.readkey()		
-			if ' ' <= input <= '~':
-				out = input			
-				break
-			elif input == ENTER:
-				out = "\n"
-				break
-				
-	if type == "int":
+		print(MENU)
+		out = ""
+		frameWidth = 20	
 		
-		num = ""
-		while True:
-			input = rc.readkey()
-							
-			if input == BACKSPACE or input == '\x1f' or input == '\x08':
-				num = num[:-1]					
+		for x in range(frameWidth + 1):	
+			printAt(x,1," ")		
+		
+		drawFrame(1,1,frameWidth,1,"│","─","┌","┐","└","┘")
+		printAt(2,0,text)
+		
+		if type == "char":
+		
+			while True:
+				input = rc.readkey()		
+				if ' ' <= input <= '~':
+					out = input			
+					break
+				elif input == ENTER:
+					out = "\n"
+					break
+					
+		if type == "int":
 			
-			elif input.isdigit() and len(num) < 8:
-				num += input				
+			num = ""
+			while True:
+				input = rc.readkey()
+								
+				if input == BACKSPACE or input == '\x1f' or input == '\x08':
+					num = num[:-1]					
 				
-			elif input == ENTER:
-				try:
-					num = int(num)
-				except:
-					num = 0
-				break	
-		
-			printAt(1,1,num.ljust(frameWidth))
-		
-		out = int(num)
-		
-	if type == "string":
-		
-		string = ""		
-		
-		while True:
-			input = rc.readkey()	
+				elif input.isdigit() and len(num) < 8:
+					num += input				
+					
+				elif input == ENTER:
+					try:
+						num = int(num)
+					except:
+						num = 0
+					break	
 			
-			if ' ' <= input <= '~' and len(string) < frameWidth:
-				string += input
+				printAt(1,1,num.ljust(frameWidth))
+			
+			out = int(num)
+			
+		if type == "string":
+			
+			string = ""		
+			
+			while True:
+				input = rc.readkey()	
 				
-			elif input == ENTER:
-				break
-				
-			elif input == BACKSPACE or input == '\x1f' or input == '\x08':
-				string = string[:-1]
-		
-			printAt(1,1,string.ljust(frameWidth))
-		
-		out = string
+				if ' ' <= input <= '~' and len(string) < frameWidth:
+					string += input
+					
+				elif input == ENTER:
+					break
+					
+				elif input == BACKSPACE or input == '\x1f' or input == '\x08':
+					string = string[:-1]
+			
+				printAt(1,1,string.ljust(frameWidth))
+			
+			out = string
 
-	print("\033[37;40m")
-	for x in range(frameWidth + 2):
-		printAt(x,0," ")
-		printAt(x,1," ")
-		printAt(x,2," ")
-	
-	inputLock = False
+		print("\033[37;40m")
+		for x in range(frameWidth + 2):
+			printAt(x,0," ")
+			printAt(x,1," ")
+			printAt(x,2," ")
+		
+		
+		inputLock.value = False	
+
 	return out
 		
 def setDelay():
@@ -805,9 +802,9 @@ def kill():
 	global stepMode
 	global stepReady
 	
-	stepMode = False
-	stepReady = False
-	running = False
+	stepMode.value = False
+	stepReady.value = False
+	running.value = False
 
 def sub():
 	a = pop()
@@ -967,6 +964,17 @@ for i in range(10):
 #INIT
 #######################################################
 
-init()
-newPlayfield(playfieldWidth,playfieldHeight)
-mainLoop()
+if __name__ == '__main__':
+
+	running = Value('i', True)
+	stepMode = Value('i', False)
+	stepReady = Value('i', False)	
+	inputLock = Value('i', False)
+	
+	multiprocessing.freeze_support()
+	init()
+	
+
+	
+	newPlayfield(playfieldWidth,playfieldHeight)
+	mainLoop()
