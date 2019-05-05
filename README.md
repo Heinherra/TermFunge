@@ -12,6 +12,6 @@ Requires [**readchar**](https://github.com/magmax/python-readchar/) and [**color
 | CTRL-N | Make selection and copy |
 | CTRL-K | Make selection and cut |
 | CTRL-U | Paste selection |
-| ESC/CTRL-O | Exit out of menu / open top menu |
+| ESC / CTRL-O / END | Exit out of menu / open top menu |
 
 ![alt text](https://i.imgur.com/dMFF61W.png)
