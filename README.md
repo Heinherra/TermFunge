@@ -1,5 +1,8 @@
 # PyFunge
 A Befunge editor and interpreter made in Python . Runs on terminals and hopefully both on Linux and Windows. Wowee <br />
+
+Requires [**readchar**](https://github.com/magmax/python-readchar/) and [**colorama**](https://github.com/tartley/colorama)
+
 **Controls** <br />
 
 | Key | Description |
