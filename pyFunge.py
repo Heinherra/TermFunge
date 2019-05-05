@@ -380,7 +380,7 @@ def mainLoop():
 			else:
 				run()
 		
-		elif key in ESCAPE
+		elif key in ESCAPE:
 			topMenu()
 		
 		elif isPrintable(ord(key[0])):
@@ -522,30 +522,31 @@ def loadPlayfield():
 	global playfieldWidth
 	global playfield
 	
-	filename = fileBrowser(False)	
-	lastLen = -1
+	filename = fileBrowser(False)		
 	
 	pf = []
 	
-	w,h = 0,0
+	w,h = -1,0
 	
 	if filename != "":
 		currentFile = filename		
 		with open(filename,'r') as file:
 			
 			for line in file:
-				if len(line) != lastLen and lastLen != -1 and len(line) != lastLen-1:
-					clearScreen()
-					drawEverything()
-					printStringToConsole("\nPlayfield has inconsistent lines")
-					return #back to main menu , lines aren't consistent 
-				else :
-					lastLen = len(line)
-					w = lastLen
+				diff = 0
+			
+				if w == -1:
+					w = len(line)
+			
+				if len(line) != w and len(line) > 0:
+					diff = w - len(line)
 				
 				l = []
 				for c in line:
 					l.append(ord(c))
+					
+				for i in range(diff):
+					l.append(32)
 					
 				pf.append(l)
 					
