@@ -451,7 +451,7 @@ def fileBrowser(directoryOnly):
 			d.extend(dirnames)
 			break
 					
-		f = [ x for x in f if x.endswith('.bf')]	
+		f = [ x for x in f if (x.endswith('.bf') or x.endswith('.txt'))]	
 		tot = len(d) + len(f)
 		
 		drawFileMenu(d,f,selector,False)
