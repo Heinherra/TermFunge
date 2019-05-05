@@ -378,7 +378,7 @@ def mainLoop():
 			else:
 				run()
 		
-		elif key == ESC or key == '\x08':
+		elif key == ESC or key == '\x08' or key == '\x0f':
 			topMenu()
 		
 		elif isPrintable(ord(key[0])):
