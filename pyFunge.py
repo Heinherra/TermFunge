@@ -578,6 +578,7 @@ def loadPlayfield():
 	global playfield
 	
 	filename = fileBrowser(False)		
+	moveCursorAbs(fieldCursor,0,0)
 	
 	pf = []
 	
@@ -597,8 +598,12 @@ def loadPlayfield():
 					diff = w - len(line)
 				
 				l = []
-				for c in line:
+				for c in line:					
 					l.append(ord(c))
+					
+				if diff != 0 and line[-1] == '\n':
+					line = line[:-1]
+					diff += 1
 					
 				for i in range(diff):
 					l.append(32)
@@ -620,7 +625,7 @@ def loadPlayfield():
 		for x in range(playfieldWidth):
 			for y in range(playfieldHeight):
 				playfield[x][y] = pf[y][x]
-			
+				
 	clearScreen()
 	drawEverything()		
 
